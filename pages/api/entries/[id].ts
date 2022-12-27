@@ -58,7 +58,25 @@ const updateEntry = async (req: NextApiRequest, res: NextApiResponse<Data>) => {
     
 }
 
-const deleteEntry = async (req: NextApiRequest, res: NextApiResponse<Data>) => {}
+const deleteEntry = async (req: NextApiRequest, res: NextApiResponse<Data>) => {
+    
+        const { id } = req.query
+    
+        try {
+            await connect()
+            const entry = await EntryModel.findById(id)
+            if( !entry ) {
+                await disconnect()
+                return res.status(404).json({ message: 'Entry not found' })
+            }
+            const dEntry = await EntryModel.findByIdAndDelete(id)
+            await disconnect()
+            res.status(200).json( dEntry! )
+        } catch (error) {
+            await disconnect()
+            res.status(500).json({ message: 'Internal server error' })
+        }
+}
 
 const getEntryByID = async (req: NextApiRequest, res: NextApiResponse<Data>) => {
 

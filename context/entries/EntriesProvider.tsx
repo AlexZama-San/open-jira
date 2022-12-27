@@ -3,6 +3,7 @@ import { Entry } from '../../interfaces/entry';
 import { EntriesContext } from './EntriesContext';
 import { entriesReducer } from './entriesReducer';
 import entriesApi from '../../apis/entriesApi';
+import { useSnackbar } from 'notistack';
 
 export interface EntriesState {
     entries: Entry[
@@ -16,6 +17,7 @@ const Entries_INITIAL_STATE: EntriesState = {
 export const EntriesProvider: FC<PropsWithChildren> = ({children}) => {
 
     const [state, dispatch] = useReducer(entriesReducer, Entries_INITIAL_STATE)
+    const {enqueueSnackbar} = useSnackbar()
 
     const addNewEntry = async(description: string) => {
             const {data} = await entriesApi.post<Entry>('/entries', {description})
@@ -23,11 +25,21 @@ export const EntriesProvider: FC<PropsWithChildren> = ({children}) => {
             dispatch({type: 'Entry_ADD_ENTRY', payload: data})
     }
 
-    const onEntryUpdated = async(entry: Entry) => {
+    const onEntryUpdated = async(entry: Entry, showSnackbar = false) => {
         try {
             const {data} = await entriesApi.put(`/entries/${entry._id}`, entry)
 
             dispatch({type: 'Entry_UPDATE_ENTRY', payload: data})
+
+            if(showSnackbar){
+            enqueueSnackbar('Entrada actualizada', {
+                variant: 'success',
+                autoHideDuration: 1500,
+                anchorOrigin: {
+                    vertical: 'top',
+                    horizontal: 'right'
+                }})
+            }
             
         } catch (error) {
             console.log({error});
@@ -42,7 +54,25 @@ export const EntriesProvider: FC<PropsWithChildren> = ({children}) => {
     useEffect(() => {
       refreshEntries()
     }, [])
-    
+
+    const deleteEntries = async(id: string) => {
+        try {
+            
+            const {data} = await entriesApi.delete(`/entries/${id}`)
+            dispatch({type: 'Entry_DELETE_ENTRY', payload: data})
+
+            enqueueSnackbar('Entrada eliminada', {
+                variant: 'success',
+                autoHideDuration: 1500,
+                anchorOrigin: {
+                    vertical: 'top',
+                    horizontal: 'right'
+                }})
+
+        } catch (error) {
+            console.log(error)
+        }
+    }
 
 
   return (
@@ -50,7 +80,8 @@ export const EntriesProvider: FC<PropsWithChildren> = ({children}) => {
         ...state,
 
         addNewEntry,
-        onEntryUpdated
+        onEntryUpdated,
+        deleteEntries
     }}>
         {children}
     </EntriesContext.Provider>
